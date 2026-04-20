@@ -27,9 +27,12 @@ solar-flare-forecast/
 │   ├── pipeline.py                  #   one-model orchestration
 │   └── constants.py                 #   CSV schema + network defaults
 │
+├── data/                            # Input: LMSAL events CSV (ground truth)
+├── output/                          # Generated: parsed forecasts per model/year
+├── evaluation_results/              # Generated: TSS/HSS tables and figures
 ├── tests/                           # Parser sanity tests
+│
 ├── config.json                      # Years, models, matching settings
-├── ccmc_models_overview.csv         # Model descriptions + papers
 ├── requirements.txt
 ├── .gitignore
 └── README.md

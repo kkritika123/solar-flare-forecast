@@ -1,3 +1,7 @@
+"""Scrape LMSAL 'latest events' pages and build data/lmsal_events_YYYY_YYYY.csv.
+
+Used as the ground truth for model.py. Writes one combined CSV per date range.
+"""
 import argparse
 import os
 import re

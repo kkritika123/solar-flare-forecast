@@ -39,8 +39,11 @@ data/*.csv
 .env
 .env.local
 
-# Optional: Cursor / tooling
+# Misc tooling
 .dist/
 
 # Local run logs
 *.log
+
+# Tests (kept local, not pushed)
+tests/

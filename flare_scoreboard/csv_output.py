@@ -1,4 +1,4 @@
-# ── Write normalized yearly CSVs per model ───────────────────────────────────
+"""Write normalized yearly CSVs per model (full-disk and region split)."""
 import csv
 import os
 from typing import Dict, List, Optional, Set

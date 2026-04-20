@@ -1,4 +1,4 @@
-# ── Config (config.json) ─────────────────────────────────────────────────────
+"""Load and normalize config.json for the pipeline."""
 import json
 from typing import Any, Dict
 

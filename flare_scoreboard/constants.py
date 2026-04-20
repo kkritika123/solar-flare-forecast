@@ -1,4 +1,4 @@
-# ── Network / CSV schema ───────────────────────────────────────────────────
+"""Network defaults and the CSV column order used in every output file."""
 USER_AGENT = "Mozilla/5.0 (flare-scoreboard-pipeline/2.4)"
 TIMEOUT = 60
 

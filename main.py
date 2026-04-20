@@ -1,8 +1,12 @@
-# CCMC Flare Scoreboard: download + parse → yearly CSVs 
+"""Download CCMC flare forecasts and write yearly CSVs per model.
+
+Settings come from config.json. Output goes to output/<MODEL>/<YEAR>_full_disk.csv
+and <YEAR>_region.csv. Run this first; then run model.py to score the results.
+"""
 from flare_scoreboard import load_config, normalize_dir, discover_models, process_model
 
 
-def _model_name_from_url(model_url: str) -> str:
+def _model_name(model_url: str) -> str:
     return model_url.rstrip("/").split("/")[-1]
 
 
@@ -20,32 +24,25 @@ def main():
 
     print("Discovering model folders...")
     models = discover_models(base_url)
-    print("Models found:", len(models))
+    print(f"Models found: {len(models)}")
     for m in models:
-        print(" -", _model_name_from_url(m))
+        print(f" - {_model_name(m)}")
 
     if models_filter is not None:
-        # Respect config filter ("models" or "assa_format_models") if provided.
-        if not models_filter:
-            label = cfg.get("models_filter_label") or "models"
-            print(
-                f"\nConfig model list is empty ({label!r}). Add folder names, "
-                "or remove that key to process all discovered models."
-            )
-            return
-        discovered = {_model_name_from_url(u) for u in models}
-        before = len(models)
-        models = [u for u in models if _model_name_from_url(u) in models_filter]
         label = cfg.get("models_filter_label") or "models"
-        print(
-            f"\nFiltered by config {label!r}: {len(models)} of {before} "
-            f"folder(s) will be processed."
-        )
+        if not models_filter:
+            print(f"\nConfig model list {label!r} is empty. Add names or remove the key.")
+            return
+
+        discovered = {_model_name(u) for u in models}
+        before = len(models)
+        models = [u for u in models if _model_name(u) in models_filter]
+        print(f"\nFiltered by {label!r}: {len(models)} of {before} folder(s) will be processed.")
+
         not_found = sorted(models_filter - discovered)
         if not_found:
-            print("  [WARN] These names were not found on the server:", ", ".join(not_found))
+            print("  [WARN] Not found on server:", ", ".join(not_found))
 
-    # Process each selected model end-to-end (download + parse + yearly CSV write).
     for model_url in models:
         process_model(
             model_url=model_url,
@@ -57,7 +54,7 @@ def main():
             download_all=download_all,
         )
 
-    print("\nDone. Output is in output/<MODEL>/<YEAR>_full_disk.csv and <YEAR>_region.csv")
+    print("\nDone. Outputs are in output/<MODEL>/<YEAR>_full_disk.csv and <YEAR>_region.csv")
 
 
 if __name__ == "__main__":

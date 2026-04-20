@@ -1,4 +1,4 @@
-# ── HTTP session, directory listing, downloads ───────────────────────────────
+"""HTTP session with retries, directory listing, and file download."""
 import os
 import threading
 import time

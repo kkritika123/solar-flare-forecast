@@ -1,4 +1,4 @@
-# ── Parse XML / TXT / JSON forecast files ────────────────────────────────────
+"""Parse XML / TXT / JSON forecast files into normalized row dicts."""
 import json
 import os
 import re

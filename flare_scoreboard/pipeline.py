@@ -1,4 +1,4 @@
-# ── Per-file and per-model orchestration ─────────────────────────────────────
+"""Per-file and per-model orchestration: download -> parse -> yearly CSVs."""
 import os
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Set

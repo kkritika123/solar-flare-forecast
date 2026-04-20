@@ -1,4 +1,4 @@
-# ── Discover models and crawl CCMC directory tree ────────────────────────────
+"""Discover model folders and crawl the CCMC directory tree."""
 from typing import List, Set
 
 from flare_scoreboard.http_client import list_dir, normalize_dir

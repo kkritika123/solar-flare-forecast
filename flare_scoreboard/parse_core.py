@@ -1,4 +1,4 @@
-# ── Small helpers (time strings, probabilities, filenames) ────────────────────
+"""Small helpers shared by parsers: time strings, probabilities, filenames."""
 import os
 import re
 from datetime import datetime
