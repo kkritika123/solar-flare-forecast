@@ -250,6 +250,28 @@ def _assa_meta(
     return {"issue_time": issue, "window_begin": w0, "window_end": w1, "method": method}
 
 
+def _assa_cell_to_prob(tok: str):
+    """Parse one ASSA table cell. ``NaN`` / ``----`` / empty are missing, not 0."""
+    s = (tok or "").strip()
+    if not s or s.replace("-", "") == "" or s.upper() in {"NAN", "NA", "NULL"}:
+        return None
+    return safe_probability(s)
+
+
+def _assa_xmc_from_table_line(header: str, data: str):
+    """Read X/M/C probabilities by column name so NaN cells cannot shift the rest."""
+    heads = header.replace("#", " ").split()
+    cells = data.split()
+    by_name = {}
+    for h, c in zip(heads, cells):
+        by_name[h.lower()] = c
+    return (
+        _assa_cell_to_prob(by_name.get("x_prob", "")),
+        _assa_cell_to_prob(by_name.get("m_prob", "")),
+        _assa_cell_to_prob(by_name.get("c_prob", "")),
+    )
+
+
 def parse_assa_txt(txt_path: str, model_name: str, source_url: str) -> List[Dict]:
     """
     Tabular scoreboard .txt: **ASSA**, **AMOS_v1**, **SPS** (``#`` on headers optional),
@@ -272,7 +294,7 @@ def parse_assa_txt(txt_path: str, model_name: str, source_url: str) -> List[Dict
     wb, we = meta["window_begin"], meta["window_end"]
     method = meta["method"]
 
-    def append_row(ftype: str, thr: str, prob: float, region_id: str) -> None:
+    def append_row(ftype: str, thr: str, prob, region_id: str) -> None:
         p = safe_probability(prob)
         if p is None:
             return
@@ -296,22 +318,25 @@ def parse_assa_txt(txt_path: str, model_name: str, source_url: str) -> List[Dict
             }
         )
 
-    # --- Full disk: data line has 3+ floats; skip title/header (X_prob line, etc.)
+    # --- Full disk: map X_prob / M_prob / C_prob from the header, not "first 3 floats".
+    # Some ASSA files put NaN in C_prob. The old regex skipped that line (only 2
+    # numeric tokens) and then treated the first region row as full-disk.
     fd_m = re.search(r"(?m)^\s*#?\s*Full Disk Forecast\b", txt, re.IGNORECASE)
     if fd_m:
-        chunk = txt[fd_m.start() : fd_m.start() + 4000]
+        rg_cut = re.search(r"(?m)^\s*#?\s*Region Forecast\b", txt[fd_m.start() :])
+        chunk = txt[fd_m.start() : fd_m.start() + (rg_cut.start() if rg_cut else 4000)]
         lines = [ln.strip() for ln in chunk.splitlines() if ln.strip()]
+        header = None
         data_line = None
         for ln in lines[1:]:
-            if "prob" in ln.lower():
+            if header is None and re.search(r"\bX_prob\b", ln, re.IGNORECASE):
+                header = ln
                 continue
-            floats = [float(x) for x in re.findall(r"\d+\.\d+", ln)]
-            if len(floats) >= 3:
+            if header is not None:
                 data_line = ln
                 break
-        if data_line is not None:
-            floats = [float(x) for x in re.findall(r"\d+\.\d+", data_line)]
-            x_p, m_p, c_p = floats[0], floats[1], floats[2]
+        if header is not None and data_line is not None:
+            x_p, m_p, c_p = _assa_xmc_from_table_line(header, data_line)
             append_row("full_disk", "X", x_p, "")
             append_row("full_disk", "M", m_p, "")
             append_row("full_disk", "C", c_p, "")
