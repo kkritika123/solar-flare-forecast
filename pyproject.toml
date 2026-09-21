@@ -5,12 +5,33 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "solar-flare-forecast"
 version = "0.1.0"
-description = "Tools for downloading and evaluating solar flare forecasts."
+description = "Tools for downloading and evaluating historical solar flare forecasts."
 readme = "README.md"
 requires-python = ">=3.10"
 
 authors = [
     {name = "Kritika"}
+]
+
+keywords = [
+    "solar-flare",
+    "space-weather",
+    "forecasting",
+    "NASA",
+    "CCMC",
+    "LMSAL",
+    "forecast-verification"
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering"
 ]
 
 dependencies = [
@@ -21,6 +42,11 @@ dependencies = [
     "lxml>=4.9.0",
     "matplotlib>=3.7.0"
 ]
+
+[project.urls]
+Homepage = "https://github.com/kkritika123/solar-flare-forecast"
+Repository = "https://github.com/kkritika123/solar-flare-forecast"
+Issues = "https://github.com/kkritika123/solar-flare-forecast/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
