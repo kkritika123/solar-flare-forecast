@@ -31,14 +31,6 @@ pip install .
 
 Python 3.10 or later is required.
 
-### Install from PyPI
-
-After the package is published to PyPI, it can be installed with:
-
-```bash
-pip install solar-flare-forecast
-```
-
 ## Quick Start
 
 Download forecasts for a specific model and year:
