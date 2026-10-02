@@ -16,6 +16,8 @@ The project currently supports historical evaluation for 2020–2025.
 - Evaluate C-, M-, and X-class flare thresholds
 - Generate yearly and cumulative evaluation results
 - Save processed forecasts and evaluation results as CSV files
+- Query full-disk and active-region forecasts through HAPI or local archive CSV files
+- Automatically split HAPI downloads into requests of at most 31 days
 
 ## Installation
 
@@ -31,51 +33,138 @@ pip install .
 
 Python 3.10 or later is required.
 
-## Quick Start
+## Forecast Queries
 
-Download forecasts for a specific model and year:
+Choose the model, forecast type, flare field, date range,
+and source using `query_forecasts.py`.
 
-```python
-from flare_scoreboard import download_forecasts
+### HAPI API
 
-download_forecasts(
-    models=["NOAA_1"],
-    years=[2024]
-)
+Download forecasts directly from HAPI:
+
+```bash
+python query_forecasts.py --source hapi --model NOAA_1 --type full_disk --flare M --start 2024-01-01 --end 2024-01-08
 ```
 
-Evaluate the downloaded forecasts:
+Long ranges are automatically split into requests of at most
+31 days. CSVs are saved in `data/hapi/`.
 
-```python
-from flare_scoreboard import evaluate
+### Processed Archive
 
-results = evaluate(
-    models=["NOAA_1"],
-    years=[2024]
-)
+Select forecasts from existing processed archive CSVs:
 
-print(results)
+```bash
+python query_forecasts.py --source archive --model NOAA_1 --type full_disk --flare M --start 2024-01-01 --end 2024-01-08 --archive-dir output
 ```
 
-If the required LMSAL observation data is not available locally, `evaluate()` automatically downloads the observed flare events for the requested years.
+This reads files under `output/<MODEL>/` and saves selected
+results in `data/archive/`. It does not download missing files.
 
-A complete workflow can be run with:
+Use `download_forecasts()` to download and process archive
+files first, as shown in Quick Start.
+
+### Batch Queries
+
+Selected models, full-disk M only:
+
+```bash
+python query_forecasts.py --source archive --all --models NOAA_1 ASSA_1 --type full_disk --flare M --start 2024-01-01 --end 2024-01-08
+```
+
+All 10 default models, both types, all available fields:
+
+```bash
+python query_forecasts.py --source archive --all --start 2024-01-01 --end 2024-01-08
+```
+
+Use `--source hapi` for API batch queries.
+
+| Option | Meaning |
+|---|---|
+| `--model` | One model |
+| `--all` | Enable batch queries |
+| `--models` | Selected models in batch mode; otherwise use the default 10 |
+| `--type` | `full_disk` or `active_region`; batch mode queries both when omitted |
+| `--flare` | Exact field or threshold name; batch mode queries all available fields when omitted |
+| `--start`, `--end` | UTC forecast-window start range: start inclusive, end exclusive |
+| `--source` | `hapi` or `archive`; default is `hapi` |
+| `--archive-dir` | Processed archive folder; default is `output` |
+| `--out` | Output filename for a single query |
+
+A single-model query requires `--model` and `--flare`.
+Its default type is `full_disk`.
+
+Repeating a query replaces its data CSV. Each run saves a
+separate timestamped report.
+
+## API and Archive Comparison
+
+Compare the same query against HAPI and processed archive data:
+
+```bash
+python test_compare.py --model NOAA_1 --type active_region --flare M --start 2024-01-01 --end 2024-01-08 --archive-dir output --out noaa_ar_m_week.csv
+```
+
+Records are matched by window start, window end, issue time,
+and region ID for active-region forecasts.
+
+The report counts shared records, source-only records, matching
+probabilities, differences, and invalid probabilities.
+Comparison CSVs are saved in `data/comparison/`.
+
+### Tested NOAA Sample
+
+For January 1–7, 2024:
+
+| M forecast type | HAPI records | Archive records | Matches | Differences |
+|---|---:|---:|---:|---:|
+| Full-disk | 21 | 21 | 21 | 0 |
+| Active-region | 36 | 36 | 36 | 0 |
+
+Neither sample contained source-only records.
+These results do not establish agreement for all models or years.
+
+### Limitations
+
+- HAPI fields and archive thresholds use exact names.
+  `M`, `MPlus`, and `M1+` require semantic verification before comparison.
+- Archive files from the previous year may be needed for forecasts
+  issued before the requested window range.
+- Invalid archive window-start dates are excluded with a warning.
+  Invalid issue/end dates in selected records cause an error.
+- Available fields and date coverage vary by source and model.
+- SPS HAPI metadata returned HTTP 500 during testing.
+- `evaluate()` currently reads processed archive data;
+  HAPI query exports are not yet connected to evaluation.
+
+
+## Quick Start: Archive Download and Evaluation
+
+Download archive forecasts and evaluate them against LMSAL observations:
 
 ```python
 from flare_scoreboard import download_forecasts, evaluate
 
 download_forecasts(
     models=["NOAA_1"],
-    years=[2024]
+    years=[2024],
 )
 
 results = evaluate(
     models=["NOAA_1"],
-    years=[2024]
+    years=[2024],
 )
 
 print(results)
 ```
+
+If the required LMSAL observations are missing, `evaluate()`
+downloads them automatically.
+
+Processed forecasts are saved in `output/<MODEL>/`.
+Evaluation results are saved in `evaluation_results/<MODEL>/`.
+
+This example uses the archive workflow.
 
 ## Download LMSAL Events Directly
 
@@ -97,39 +186,30 @@ This step is optional because `evaluate()` automatically downloads the required 
 
 ## Repository Structure
 
-```text
-solar-flare-forecast/
-│
-├── flare_scoreboard/
-│   ├── __init__.py          # Public package interface
-│   ├── api.py               # Download and evaluation API
-│   ├── config.py            # Configuration and built-in defaults
-│   ├── constants.py         # CSV schema and constants
-│   ├── crawl.py             # Discovers CCMC model folders
-│   ├── csv_output.py        # Writes parsed forecast CSV files
-│   ├── evaluation.py        # Event matching and TSS/HSS calculations
-│   ├── http_client.py       # HTTP requests and downloads
-│   ├── lmsal.py             # Downloads LMSAL observed flare events
-│   ├── parse_core.py        # Time and probability helpers
-│   ├── parsers.py           # XML, TXT, and JSON parsers
-│   ├── pipeline.py          # Forecast processing pipeline
-│   └── scoring.py           # Model evaluation and result generation
-│
-├── main.py
-├── model.py
-├── scrape_lmsal_events.py
-├── plot_per_model_yearly_trends.py
-├── config.json
-├── pyproject.toml
-├── requirements.txt
-├── .gitignore
-└── README.md
-```
+| File or folder | Purpose |
+|---|---|
+| `flare_scoreboard/` | Installable Python package |
+| `flare_scoreboard/api.py` | Public download, query, comparison, and evaluation functions |
+| `flare_scoreboard/hapi.py` | HAPI requests and 31-day download chunks |
+| `flare_scoreboard/crawl.py` | Archive model discovery |
+| `flare_scoreboard/parsers.py` | XML, TXT, and JSON forecast parsers |
+| `flare_scoreboard/pipeline.py` | Archive download and processing pipeline |
+| `flare_scoreboard/lmsal.py` | Observed flare-event retrieval |
+| `flare_scoreboard/evaluation.py` | Event matching and TSS/HSS calculations |
+| `flare_scoreboard/scoring.py` | Evaluation result generation |
+| `query_forecasts.py` | Command-line HAPI and processed archive queries |
+| `test_compare.py` | Command-line API-versus-archive comparison |
+| `main.py`, `model.py` | Original archive and evaluation scripts |
+| `scrape_lmsal_events.py` | Standalone observation-download script |
+| `plot_per_model_yearly_trends.py` | Research plotting utility |
+| `config.json` | Workflow configuration |
+| `pyproject.toml`, `requirements.txt` | Package metadata and dependencies |
+| `README.md` | Installation and usage documentation |
 
 The `flare_scoreboard` directory contains the installable Python package.
 The root-level scripts are retained for the original research workflow and plotting utilities.
 
-## System Pipeline
+## Archive Download and Evaluation Pipeline
 
 The diagram below shows how forecast data and observed flare events move through the system.
 
