@@ -1,11 +1,13 @@
 #CCMC Flare Scoreboard tools for downloading and evaluating forecasts.
 
+from .api import get_predictions
 from flare_scoreboard.config import load_config
 from flare_scoreboard.crawl import discover_models
 from flare_scoreboard.http_client import normalize_dir
 from flare_scoreboard.pipeline import process_model, process_one
 from flare_scoreboard.api import download_forecasts, evaluate
 from flare_scoreboard.lmsal import download_lmsal_events
+from .api import compare_sources
 
 __all__ = [
     "load_config",
@@ -16,4 +18,5 @@ __all__ = [
     "download_forecasts",
     "evaluate",
     "download_lmsal_events",
+    "get_predictions",
 ]
