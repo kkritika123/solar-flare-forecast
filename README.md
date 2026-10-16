@@ -18,6 +18,8 @@ The project currently supports historical evaluation for 2020–2025.
 - Save processed forecasts and evaluation results as CSV files
 - Query full-disk and active-region forecasts through HAPI or local archive CSV files
 - Automatically split HAPI downloads into requests of at most 31 days
+- Process archived forecasts for a user-selected UTC date range
+- Reuse cached downloads and parsing checkpoints
 
 ## Installation
 
@@ -236,6 +238,30 @@ Parsed forecast files are saved in:
 
 ```text
 output/<MODEL>/
+```
+
+### Process Archived Forecasts by Date Range
+
+Process archived solar flare forecasts for a specific UTC date range:
+
+```bash
+python main.py --start 2024-01-15 --end 2024-02-10
+```
+
+The start date is inclusive, and the end date is exclusive. Forecast records are filtered by `issue_time_utc`.
+
+The pipeline downloads or reuses cached archive files, processes the forecasts, and saves the filtered CSVs in a separate directory:
+
+```text
+output/date_ranges/20240115T000000_20240210T000000/
+```
+
+Models are selected using `config.json`.
+
+To process the configured years without date filtering:
+
+```bash
+python main.py
 ```
 
 ### Evaluate Forecasts

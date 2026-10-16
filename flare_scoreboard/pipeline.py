@@ -1,4 +1,5 @@
 """Per-file and per-model orchestration: download -> parse -> yearly CSVs."""
+from datetime import datetime, timezone
 import os
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Set
@@ -70,8 +71,53 @@ def process_one(url: str, model_name: str, raw_dir: str) -> List[Dict]:
         )
 
     return rows
+def filter_rows_by_date(rows, start=None, end=None):
+    """Keep forecasts issued within the requested UTC date range.
 
+    The start is inclusive and the end is exclusive.
+    """
+    if start is None and end is None:
+        return rows
 
+    def parse_date(value):
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            dt = value
+        else:
+            dt = datetime.fromisoformat(
+                str(value).strip().replace("Z", "+00:00")
+            )
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+
+    start_dt = parse_date(start)
+    end_dt = parse_date(end)
+
+    if start_dt and end_dt and start_dt >= end_dt:
+        raise ValueError("start must be earlier than end")
+
+    filtered = []
+
+    for row in rows:
+        issue_time = row.get("issue_time_utc")
+        if not issue_time:
+            continue
+
+        try:
+            issued = parse_date(issue_time)
+        except (ValueError, TypeError):
+            continue
+
+        if start_dt is not None and issued < start_dt:
+            continue
+        if end_dt is not None and issued >= end_dt:
+            continue
+
+        filtered.append(row)
+
+    return filtered
 
 def process_model(
     model_url: str,
@@ -81,6 +127,8 @@ def process_model(
     out_dir: str,
     workers: int,
     download_all: bool,
+    start=None,
+    end=None,
 ):
     model_name = model_url.rstrip("/").split("/")[-1]
     print(f"\n=== Model: {model_name} ===")
@@ -141,5 +189,8 @@ def process_model(
     print("  Files that produced parsed rows:", produced_files)
     print("  Total parsed rows:", len(model_rows))
 
+    model_rows = filter_rows_by_date(model_rows, start=start, end=end)
+
+    print("  Rows after date filtering:", len(model_rows))
+
     write_model_year_csvs_split(model_rows, model_name, out_dir, years_set=years_set)
-    print(f"  Wrote yearly CSVs to: {os.path.join(out_dir, model_name)}")
