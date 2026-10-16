@@ -37,6 +37,25 @@ def main():
     )
     parser.add_argument("--start", type=_parse_date)
     parser.add_argument("--end", type=_parse_date)
+
+    model_group = parser.add_mutually_exclusive_group()
+
+    model_group.add_argument(
+        "--model",
+        help="Process one forecasting model, e.g. NOAA_1"
+    )
+
+    model_group.add_argument(
+        "--models",
+        help="Process multiple models separated by commas, e.g. NOAA_1,ASSA_1"
+    )
+
+    model_group.add_argument(
+        "--all",
+        action="store_true",
+     help="Process all discovered forecasting models"
+    )
+
     args = parser.parse_args()
 
     if (args.start is None) != (args.end is None):
@@ -55,6 +74,18 @@ def main():
     workers = cfg["workers"]
     download_all = cfg["download_all_files"]
     models_filter = cfg.get("models_filter")
+    if args.model:
+        models_filter = {args.model.strip()}
+    elif args.models:
+        models_filter = {
+            model.strip()
+            for model in args.models.split(",")
+            if model.strip()
+        }
+        if not models_filter:
+            parser.error("--models must contain at least one model name.")
+    elif args.all:
+        models_filter = None
 
     if args.start is not None:
         # Discover all year folders touched by the requested interval.

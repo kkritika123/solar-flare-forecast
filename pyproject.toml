@@ -48,6 +48,12 @@ Homepage = "https://github.com/kkritika123/solar-flare-forecast"
 Repository = "https://github.com/kkritika123/solar-flare-forecast"
 Issues = "https://github.com/kkritika123/solar-flare-forecast/issues"
 
+[project.scripts]
+solarflarecast = "flare_scoreboard.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["flare_scoreboard*"]
+
+[tool.setuptools]
+py-modules = ["query_forecasts"]

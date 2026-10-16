@@ -2,8 +2,6 @@
 
 from io import StringIO
 
-from attrs import fields
-from matplotlib.style import available
 import pandas as pd
 import requests
 

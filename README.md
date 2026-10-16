@@ -1,25 +1,26 @@
 # Solar Flare Forecast
 
-A Python package for downloading and evaluating historical solar flare forecasts from the NASA CCMC Flare Scoreboard.
+A Python research package for retrieving, processing, querying, and evaluating historical solar flare forecasts from the [NASA CCMC Flare Scoreboard](https://ccmc.gsfc.nasa.gov/scoreboards/flare/). The project compares forecast predictions with observed flare events from the [LMSAL SolarSoft archive](https://www.lmsal.com/solarsoft/latest_events_archive.html) and computes forecast verification metrics, including the True Skill Statistic (TSS) and Heidke Skill Score (HSS).
 
-The package retrieves forecasts from multiple forecasting models, obtains observed solar flare events from the LMSAL SolarSoft archive, and evaluates forecast performance using the True Skill Statistic (TSS) and Heidke Skill Score (HSS).
-
-The project currently supports historical evaluation for 2020–2025.
+The research workflow currently covers historical evaluation for **2020–2025**. Data availability and supported forecast fields differ by model and source.
 
 ## Features
 
 - Download historical forecasts from the NASA CCMC Flare Scoreboard
+- Retrieve forecast data through the HAPI API or historical archive
+- Support single-model, multiple-model, and all-model selection
 - Parse XML, TXT, and JSON forecast files
-- Evaluate full-disk and active-region forecasts
-- Automatically download LMSAL observed flare events when needed
+- Query full-disk and active-region forecasts by model, flare class, and UTC date range
+- Process archived forecasts for user-selected date ranges
+- Automatically split HAPI downloads into requests of at most 31 days
+- Reuse cached downloads and processing checkpoints
+- Automatically retrieve LMSAL observed solar flare events when needed
+- Evaluate full-disk and active-region forecasts against observed events
 - Calculate True Skill Statistic (TSS) and Heidke Skill Score (HSS)
 - Evaluate C-, M-, and X-class flare thresholds
 - Generate yearly and cumulative evaluation results
-- Save processed forecasts and evaluation results as CSV files
-- Query full-disk and active-region forecasts through HAPI or local archive CSV files
-- Automatically split HAPI downloads into requests of at most 31 days
-- Process archived forecasts for a user-selected UTC date range
-- Reuse cached downloads and parsing checkpoints
+- Exportprocessed forecasts and evaluation results as CSV files
+- Support forecast queries through the solarflarecast command-line interface
 
 ## Installation
 
@@ -35,49 +36,154 @@ pip install .
 
 Python 3.10 or later is required.
 
+For development, use an editable installation from the repository:
+
+```bash
+python -m pip install -e .
+```
+
+Verify the installation:
+
+```bash
+solarflarecast query --help
+```
+### Install from PyPI 
+
+```bash
+pip install solar-flare-forecast
+```
+Verify the installation:
+
+```bash
+solarflarecast query --help
+```
+
 ## Forecast Queries
 
-Choose the model, forecast type, flare field, date range,
-and source using `query_forecasts.py`.
+The package provides a command-line interface for querying historical solar flare forecasts from the CCMC Flare Scoreboard.
+
+Users can select a forecasting model, forecast type, flare class, UTC date range, and data source.
 
 ### HAPI API
 
 Download forecasts directly from HAPI:
 
 ```bash
-python query_forecasts.py --source hapi --model NOAA_1 --type full_disk --flare M --start 2024-01-01 --end 2024-01-08
+solarflarecast query --source hapi --model NOAA_1 --type full_disk --flare M --start 2024-01-01 --end 2024-01-07
 ```
 
-Long ranges are automatically split into requests of at most
-31 days. CSVs are saved in `data/hapi/`.
+This query was tested and returned 18 forecast records.
+Long date ranges are automatically split into requests of at most 31 days. Results are saved as CSV files in `data/hapi/`.
 
 ### Processed Archive
 
-Select forecasts from existing processed archive CSVs:
+Query previously processed archive forecasts:
 
 ```bash
-python query_forecasts.py --source archive --model NOAA_1 --type full_disk --flare M --start 2024-01-01 --end 2024-01-08 --archive-dir output
+solarflarecast query --source archive --model SPS_1 --type full_disk --flare M --start 2024-01-15 --end 2024-02-10 --archive-dir output
 ```
 
-This reads files under `output/<MODEL>/` and saves selected
-results in `data/archive/`. It does not download missing files.
-
-Use `download_forecasts()` to download and process archive
-files first, as shown in Quick Start.
+This query was tested and returned 25 forecast records.
+The command reads existing processed CSV files under `output/<MODEL>/` and saves selected records in `data/archive/`. It does not download missing archive files.
 
 ### Batch Queries
 
-Selected models, full-disk M only:
+Query selected models:
 
 ```bash
-python query_forecasts.py --source archive --all --models NOAA_1 ASSA_1 --type full_disk --flare M --start 2024-01-01 --end 2024-01-08
+solarflarecast query --source hapi --all --models NOAA_1 ASSA_1 --type full_disk --flare M --start 2024-01-01 --end 2024-01-07
 ```
 
-All 10 default models, both types, all available fields:
+Query the default batch model set:
 
 ```bash
-python query_forecasts.py --source archive --all --start 2024-01-01 --end 2024-01-08
+solarflarecast query --source hapi --all --start 2024-01-01 --end 2024-01-07
 ```
+
+Batch queries support multiple models, forecast types, and available flare fields.
+
+These batch commands illustrate the supported options but have not yet been verified end to end.
+
+The original `python query_forecasts.py` interface remains available when running from the repository.
+
+To view available query options:
+
+```bash
+solarflarecast query --help
+```
+
+## Example Output
+
+This section presents actual results generated by the Solar Flare Forecast package using the NASA CCMC Flare Scoreboard data. The examples demonstrate forecast retrieval, probability values, and processing multiple forecasting models.
+
+### Example 1: HAPI Forecast Query
+
+The following command retrieves NOAA_1 full-disk M-class solar flare forecasts for January 1–7, 2024.
+
+```bash
+solarflarecast query --source hapi --model NOAA_1 --type full_disk --flare M --start 2024-01-01 --end 2024-01-07
+```
+
+**Result:** 18 forecast records retrieved.
+
+**Sample output (first 5 records):**
+
+| Forecast Window Start (UTC) | Forecast Window End (UTC) | Issue Time (UTC) | M-Class Probability |
+|---|---|---|---:|
+| 2024-01-01 00:00 | 2024-01-02 00:00 | 2023-12-29 22:00 | 0.15 |
+| 2024-01-01 00:00 | 2024-01-02 00:00 | 2023-12-30 22:00 | 0.15 |
+| 2024-01-01 00:00 | 2024-01-02 00:00 | 2023-12-31 22:00 | 0.30 |
+| 2024-01-02 00:00 | 2024-01-03 00:00 | 2023-12-30 22:00 | 0.15 |
+| 2024-01-02 00:00 | 2024-01-03 00:00 | 2023-12-31 22:00 | 0.30 |
+
+The probability values represent the model's predicted likelihood of an M-class solar flare during the corresponding forecast window. For example, a probability of `0.30` represents a 30% predicted likelihood.
+
+Multiple forecasts may cover the same forecast window because they were issued at different times.
+
+**Generated CSV file:**
+
+```text
+data/hapi/NOAA_1_full_disk_M_20240101T000000_20240107T000000.csv
+```
+
+The values above were obtained directly from the generated CSV file.
+
+### Example 2: Processing Multiple Forecast Models
+
+The archive processing pipeline allows researchers to select one model, multiple models, or all discovered models without modifying `config.json`.
+
+The following command processes NOAA_1 and SPS_1 forecasts for January 1–3, 2024.
+
+```bash
+python main.py --models NOAA_1,SPS_1 --start 2024-01-01 --end 2024-01-03
+```
+
+**Actual processing results:**
+
+| Model | Files Processed | Total Parsed Rows | Rows After Date Filtering |
+|---|---:|---:|---:|
+| NOAA_1 | 9,620 | 62,449 | 36 |
+| SPS_1 | 2,285 | 6,855 | 6 |
+| **Total** | **11,905** | **69,304** | **42** |
+
+The archive discovery process identified 17 available model folders. Two models were selected for this example.
+
+Forecast records were filtered using `issue_time_utc`, with the start date inclusive and the end date exclusive.
+
+**Generated output files:**
+
+```text
+output/date_ranges/20240101T000000_20240103T000000/
+├── NOAA_1/
+│   ├── 2024_full_disk.csv
+│   └── 2024_region.csv
+└── SPS_1/
+    └── 2024_full_disk.csv
+```
+
+These results were obtained from an actual execution of the archive processing pipeline.
+
+The HAPI query and archive processing examples use different date-filtering criteria: HAPI queries select forecast windows, while `main.py` filters archive records by forecast issue time.
 
 Use `--source hapi` for API batch queries.
 
@@ -242,27 +348,50 @@ output/<MODEL>/
 
 ### Process Archived Forecasts by Date Range
 
-Process archived solar flare forecasts for a specific UTC date range:
+The archive processing pipeline allows researchers to select one model, multiple models, or all discovered models for a specific UTC date range.
+
+**Process one model:**
 
 ```bash
-python main.py --start 2024-01-15 --end 2024-02-10
+python main.py --model NOAA_1 --start 2024-01-01 --end 2024-01-03
 ```
 
-The start date is inclusive, and the end date is exclusive. Forecast records are filtered by `issue_time_utc`.
+**Process multiple models:**
 
-The pipeline downloads or reuses cached archive files, processes the forecasts, and saves the filtered CSVs in a separate directory:
+```bash
+python main.py --models NOAA_1,SPS_1 --start 2024-01-01 --end 2024-01-03
+```
+
+**Process all discovered models:**
+
+```bash
+python main.py --all --start 2024-01-01 --end 2024-01-03
+```
+
+**Use models selected in config.json:**
+
+```bash
+python main.py --start 2024-01-01 --end 2024-01-03
+```
+
+When no model-selection argument is provided, the pipeline uses the models specified in `config.json`.
+
+Forecast records are filtered by `issue_time_utc`, with the start date inclusive and the end date exclusive.
+
+The processed CSV files are saved in:
 
 ```text
-output/date_ranges/20240115T000000_20240210T000000/
+output/date_ranges/20240101T000000_20240103T000000/
 ```
-
-Models are selected using `config.json`.
 
 To process the configured years without date filtering:
 
 ```bash
 python main.py
 ```
+
+**Note:** Single-model and multiple-model processing have been successfully tested. The `--all` option is implemented.
+
 
 ### Evaluate Forecasts
 
