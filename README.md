@@ -1,30 +1,62 @@
 # Solar Flare Forecast
 
-A Python research package for retrieving, processing, querying, and evaluating historical solar flare forecasts from the [NASA CCMC Flare Scoreboard](https://ccmc.gsfc.nasa.gov/scoreboards/flare/). The project compares forecast predictions with observed flare events from the [LMSAL SolarSoft archive](https://www.lmsal.com/solarsoft/latest_events_archive.html) and computes forecast verification metrics, including the True Skill Statistic (TSS) and Heidke Skill Score (HSS).
+Solar Flare Forecast is an open-source Python package for retrieving, processing, and evaluating historical solar flare forecasts from the NASA Community Coordinated Modeling Center (CCMC) Flare Scoreboard.
 
-The research workflow currently covers historical evaluation for **2020–2025**. Data availability and supported forecast fields differ by model and source.
+The package provides access to forecast data through the CCMC HAPI API and historical forecast archives. Users can select forecasting models, flare classes, forecast types, and date ranges to retrieve and analyze historical predictions.
+
+For forecast evaluation, the package compares processed archive forecasts with observed solar flare events from the LMSAL SolarSoft archive and calculates verification metrics, including the True Skill Statistic (TSS) and Heidke Skill Score (HSS).
+
+The project supports historical solar flare forecast analysis for 2020–2025, with data availability varying by model and source. It can be installed directly from PyPI and used through Python functions or a command-line interface.
 
 ## Features
 
-- Download historical forecasts from the NASA CCMC Flare Scoreboard
-- Retrieve forecast data through the HAPI API or historical archive
-- Support single-model, multiple-model, and all-model selection
-- Parse XML, TXT, and JSON forecast files
-- Query full-disk and active-region forecasts by model, flare class, and UTC date range
-- Process archived forecasts for user-selected date ranges
-- Automatically split HAPI downloads into requests of at most 31 days
-- Reuse cached downloads and processing checkpoints
-- Automatically retrieve LMSAL observed solar flare events when needed
-- Evaluate full-disk and active-region forecasts against observed events
-- Calculate True Skill Statistic (TSS) and Heidke Skill Score (HSS)
-- Evaluate C-, M-, and X-class flare thresholds
-- Generate yearly and cumulative evaluation results
-- Exportprocessed forecasts and evaluation results as CSV files
-- Support forecast queries through the solarflarecast command-line interface
+### Forecast Data Retrieval
+- Retrieve historical solar flare forecasts from the NASA CCMC Flare Scoreboard.
+- Access forecast data through the HAPI API and historical forecast archives.
+- Select individual models, multiple models, or all available models supported by the workflow.
+- Query full-disk and active-region forecasts by flare class and UTC date range.
+- Automatically split long HAPI requests into intervals of up to 31 days.
+
+### Data Processing and Storage
+- Parse historical forecast files in XML, TXT, and JSON formats.
+- Organize forecast records into structured CSV files for analysis.
+- Filter archived forecasts by selected date ranges.
+- Reuse locally cached downloads and processing checkpoints to reduce repeated work.
+
+### Forecast Evaluation
+- Retrieve observed solar flare events from the LMSAL SolarSoft archive.
+- Compare processed archive forecasts against observed flare events.
+- Calculate True Skill Statistic (TSS) and Heidke Skill Score (HSS).
+- Evaluate C-, M-, and X-class flare thresholds when supported by the available data.
+- Generate yearly and cumulative evaluation results.
+
+### Package Accessibility
+- Install the package through PyPI or directly from GitHub.
+- Access package functionality through importable Python functions.
+- Run forecast queries using the `solarflarecast` command-line interface.
+- Export forecast data and evaluation results as CSV files.
 
 ## Installation
 
-### Install from GitHub
+Solar Flare Forecast requires Python 3.10 or later. The package can be installed directly from PyPI or from the GitHub repository.
+
+### Option 1: Install from PyPI (Recommended)
+
+Install the published package using pip:
+
+```bash
+pip install solar-flare-forecast
+```
+
+After installation, verify that the command-line interface is available:
+
+```bash
+solarflarecast query --help
+```
+
+This displays the available commands and options for retrieving historical solar flare forecasts.
+
+### Option 2: Install from GitHub
 
 Clone the repository and install the package:
 
@@ -34,29 +66,21 @@ cd solar-flare-forecast
 pip install .
 ```
 
-Python 3.10 or later is required.
-
-For development, use an editable installation from the repository:
+For development, install the package in editable mode:
 
 ```bash
 python -m pip install -e .
 ```
 
-Verify the installation:
+### Verify the Installation
+
+Run:
 
 ```bash
-solarflarecast query --help
+python -c "import flare_scoreboard; print('Solar Flare Forecast package imported successfully')"
 ```
-### Install from PyPI 
 
-```bash
-pip install solar-flare-forecast
-```
-Verify the installation:
-
-```bash
-solarflarecast query --help
-```
+The package can now be used through its Python functions and command-line interface.
 
 ## Forecast Queries
 
@@ -168,7 +192,7 @@ python main.py --models NOAA_1,SPS_1 --start 2024-01-01 --end 2024-01-03
 
 The archive discovery process identified 17 available model folders. Two models were selected for this example.
 
-Forecast records were filtered using `issue_time_utc`, with the start date inclusive and the end date exclusive.
+Forecast records are filtered using `window_begin_utc`, which represents the beginning of the prediction window. The start date is inclusive, and the end date is exclusive. Forecasts issued before the requested date range may still be included if their prediction windows begin within that range.
 
 **Generated output files:**
 
@@ -316,6 +340,24 @@ This step is optional because `evaluate()` automatically downloads the required 
 
 The `flare_scoreboard` directory contains the installable Python package.
 The root-level scripts are retained for the original research workflow and plotting utilities.
+
+## Package Testing
+
+Solar Flare Forecast includes automated tests to verify package functionality, forecast processing, and date-range filtering.
+
+Run the complete test suite using:
+
+```bash
+python -m pytest -q
+```
+
+Latest local test result:
+
+```text
+21 passed in 5.58s
+```
+
+The package is available on PyPI as `solar-flare-forecast`. The latest development changes are maintained in the GitHub repository and have not yet been published as a new PyPI release.
 
 ## Archive Download and Evaluation Pipeline
 
