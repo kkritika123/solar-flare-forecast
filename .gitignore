@@ -2,6 +2,7 @@
 .venv/
 venv/
 env/
+package_test_env/
 
 # Python
 __pycache__/
@@ -41,9 +42,8 @@ data/*.csv
 
 # Misc tooling
 .dist/
+.pytest_cache/
+.checkpoints/
 
 # Local run logs
 *.log
-
-# Tests (kept local, not pushed)
-tests/

@@ -2,7 +2,10 @@
 import os
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Set
-
+from flare_scoreboard.checkpoint import (
+    load_checkpoint,
+    save_checkpoint,
+)
 from flare_scoreboard.crawl import crawl_model_files_smart, top_level_year_folders_on_server
 from flare_scoreboard.csv_output import write_model_year_csvs_split
 from flare_scoreboard.http_client import download_file, get_ext
@@ -13,24 +16,61 @@ from flare_scoreboard.parsers import (
 )
 
 
+
 def process_one(url: str, model_name: str, raw_dir: str) -> List[Dict]:
-    # Download once to local cache, then parse by extension.
+    """Download, parse, and checkpoint one forecast file."""
+
     local = download_file(url, root=raw_dir)
+
     if not local:
         return []
+
+    cache_dir = os.path.join(raw_dir, ".checkpoints")
+
+    cached_rows = load_checkpoint(
+        url,
+        cache_dir,
+        local,
+        model_name=model_name,
+    )
+
+    if cached_rows is not None:
+        return cached_rows
 
     ext = os.path.splitext(local)[1].lower()
 
     if ext == ".xml":
-        return parse_iswa_xml(local, model_name=model_name, source_url=url)
-    if ext == ".txt":
-        return parse_txt_or_xml_disguised_as_txt(
-            local, model_name=model_name, source_url=url
+        rows = parse_iswa_xml(
+            local,
+            model_name=model_name,
+            source_url=url,
         )
-    if ext == ".json":
-        return parse_json_forecast(local, model_name=model_name, source_url=url)
+    elif ext == ".txt":
+        rows = parse_txt_or_xml_disguised_as_txt(
+            local,
+            model_name=model_name,
+            source_url=url,
+        )
+    elif ext == ".json":
+        rows = parse_json_forecast(
+            local,
+            model_name=model_name,
+            source_url=url,
+        )
+    else:
+        return []
 
-    return []
+    if rows:
+        save_checkpoint(
+            url,
+            cache_dir,
+            local,
+            rows,
+            model_name=model_name,
+        )
+
+    return rows
+
 
 
 def process_model(
